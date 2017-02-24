@@ -8,6 +8,7 @@ import multiprocessing
 
 
 class JobTracker:
+	""" Object used to manage and document progress of multiprocessing pool. """
 	def __init__(self, total=0):
 		self.prog, self.active, = 0, []
 		self.total = total
@@ -87,18 +88,40 @@ class JobTracker:
 
 
 class MusicConverter(JobTracker):
-	music_ext = ['flac', 'mp3', 'wma', 'm4a', 'ape', 'wv', 'ogg', 'mp2']
+	""" Object used to convert music library into another format. """
+	# Commented out a few that didn't work.
+	formats = {
+		#'AACAudio': (audiotools.AACAudio, 'm4a'),
+		'AiffAudio': (audiotools.AiffAudio, 'aiff'),
+		'ALACAudio': (audiotools.ALACAudio, 'alac'),
+		'AuAudio': (audiotools.AuAudio, 'au'),
+		'FlacAudio': (audiotools.FlacAudio, 'flac'),
+		'M4AAudio': (audiotools.M4AAudio, 'm4a'),
+		'MP3Audio': (audiotools.MP3Audio, 'mp3'),
+		'MP2Audio': (audiotools.MP2Audio, 'mp2'),
+		#'OggFlacAudio': (audiotools.OggFlacAudio, 'ogg'),
+		'OpusAudio': (audiotools.OpusAudio, 'opus'),
+		#'ShortenAudio': (audiotools.ShortenAudio, 'shn'),
+		'SpeexAudio': (audiotools.SpeexAudio, 'spx'),
+		'VorbisAudio': (audiotools.VorbisAudio, 'ogg'),
+		'WaveAudio': (audiotools.WaveAudio, 'wav'),
+		'WavPackAudio': (audiotools.WavPackAudio, 'wv')
+	}
+	music_ext = [
+		'wav', 'aiff', 'wma', 'alac', 'spx', 'wv', 'ape',
+		'mp2', 'opus', 'shn', 'flac', 'mp3', 'au', 'm4a', 'ogg'
+	]
 	image_ext = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tif']
 
-	def __init__(self, archive_path, portable_path, out_ext):
+	def __init__(self, archive_path, portable_path, out_format):
 		super().__init__()
 		self.archive_path = archive_path
 		self.portable_path = portable_path
-		self.out_ext = out_ext
 		self.matches = []
 		self.portable = set(glob.glob(portable_path + '/**', recursive=True))
 		self.regex_music = self.regext(self.music_ext)
 		self.regex_image = self.regext(self.image_ext)
+		self.out_format, self.out_ext = self.formats[out_format]
 
 	def regext(self, t):
 		""" Converts a list of strings into a regular expression that
@@ -115,21 +138,23 @@ class MusicConverter(JobTracker):
 			'({})(.*\.)({})$'.format(self.archive_path, '|'.join(t))
 		)
 
-	def convert(self, in_path, out_path, display, formout=audiotools.OpusAudio):
+	def convert(self, in_path, out_path, display, out_format=None):
 		""" Converts an audio file into given output format.
 		Required arguments:
 			in_path -- Path to input file.
 			out_path -- Path to output file.
 			display -- String representing transfer.
 		Optional arguments:
-			formout -- Output format. Defaults to Opus.
+			out_format -- Output format. Defaults to Opus.
 		Returns:
 			display -- Pass straight through for multiprocessing callback.
 		Side effects:
 			Creates a new file with formatted audio.
 		"""
+		if not out_format:
+			out_format = self.out_format
 		in_file = audiotools.open(in_path)
-		in_file.convert(out_path, formout)
+		in_file.convert(out_path, out_format)
 		metadata = in_file.get_metadata()
 		audiotools.open(out_path).set_metadata(metadata)
 		return display
@@ -194,10 +219,10 @@ class MusicConverter(JobTracker):
 		print(str(self.total) + ' files converted. Your library is up to date.')
 
 
+
 if __name__ == '__main__':
 	archive_path = ''
 	portable_path = ''
-	out_ext = 'opus'
 
-	converter = MusicConverter(archive_path, portable_path, out_ext)
+	converter = MusicConverter(archive_path, portable_path, 'OpusAudio')
 	converter.run()
