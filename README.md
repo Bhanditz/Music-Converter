@@ -2,15 +2,17 @@
 Converts entire library to specified format, ignoring files that were previously converted. It currently only works in Unix-like systems due to glob, but it shouldn't be hard to adapt for Windows.
 
 ## Usage
-Here is how I use it to squeeze as much as possible on a microSD card. OpusAudio defaults to 96 kbps (which actually sounds decent).
 ```python
 archive_path = '/path/to/main/library'
 portable_path = '/path/to/converted/library'
 
-converter = MusicConverter(archive_path, portable_path, 'OpusAudio')
+converter = MusicConverter(archive_path, portable_path, 'MP3Audio', 'standard')
 converter.run()
 ```
-The three arguments you see there are archive_path, portable_path, and format. A fourth, optional argument is quality.
+The first three arguments you see there are archive_path, portable_path, and format. The fourth, optional argument is quality. The default quality for mp3 is "standard", so you could actually achieve the same thing by replacing the instantiation line with:
+```python
+converter = MusicConverter(archive_path, portable_path, 'MP3Audio')
+```
 
 ### archive_path and portable_path
 Paths for your music library. archive_path is what you are converting, and portable_path is where you want the converted files.
@@ -47,12 +49,14 @@ Every format has its own set of compression levels which are stored in audiotool
                                 "extreme": COMP_LAME_EXTREME,
                                 "insane": COMP_LAME_INSANE}
 ```
-So, if you want to convert your entire library to V2 MP3, you should create your MusicConverter object like so:
+Standard is another name for V2, as you can see here: http://wiki.hydrogenaud.io/index.php?title=LAME#Recommended_settings_details
+
+### Another example
+Here is how I use it to squeeze as much as possible on a microSD card. OpusAudio defaults to 96 kbps (which actually sounds decent).
 ```python
 archive_path = '/path/to/main/library'
 portable_path = '/path/to/converted/library'
 
-converter = MusicConverter(archive_path, portable_path, 'MP3Audio', 'standard')
+converter = MusicConverter(archive_path, portable_path, 'OpusAudio')
 converter.run()
 ```
-How did I know V2 is the same as standard? http://wiki.hydrogenaud.io/index.php?title=LAME#Recommended_settings_details
