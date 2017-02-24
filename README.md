@@ -1,4 +1,4 @@
-# Music-Converter
+# Music Converter
 Converts entire library to specified format, ignoring files that were previously converted. It currently only works in Unix-like systems due to glob, but it shouldn't be hard to adapt for Windows.
 
 ## Usage
