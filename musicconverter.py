@@ -113,7 +113,7 @@ class MusicConverter(JobTracker):
 	]
 	image_ext = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tif']
 
-	def __init__(self, archive_path, portable_path, out_format):
+	def __init__(self, archive_path, portable_path, out_format, quality=None):
 		super().__init__()
 		self.archive_path = archive_path
 		self.portable_path = portable_path
@@ -122,6 +122,7 @@ class MusicConverter(JobTracker):
 		self.regex_music = self.regext(self.music_ext)
 		self.regex_image = self.regext(self.image_ext)
 		self.out_format, self.out_ext = self.formats[out_format]
+		self.quality = quality
 
 	def regext(self, t):
 		""" Converts a list of strings into a regular expression that
@@ -154,7 +155,10 @@ class MusicConverter(JobTracker):
 		if not out_format:
 			out_format = self.out_format
 		in_file = audiotools.open(in_path)
-		in_file.convert(out_path, out_format)
+		if self.quality:
+			in_file.convert(out_path, out_format, compression=self.quality)
+		else:
+			in_file.convert(out_path, out_format)
 		metadata = in_file.get_metadata()
 		audiotools.open(out_path).set_metadata(metadata)
 		return display
