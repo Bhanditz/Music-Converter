@@ -2,6 +2,7 @@
 Converts entire library to specified format, ignoring files that were previously converted. It currently only works in Unix-like systems due to glob, but it shouldn't be hard to adapt for Windows.
 
 ## Usage
+This is how you would convert your entire library to MP3 V2:
 ```python
 archive_path = '/path/to/main/library'
 portable_path = '/path/to/converted/library'
