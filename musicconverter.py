@@ -16,7 +16,6 @@ class JobTracker:
 		self.procs = multiprocessing.cpu_count()
 		self.lines = self.procs + 5
 		self.done = 'Waiting for first file to complete . . .'
-		self.started = ''
 
 	def show_state(self):
 		""" Lists all jobs currently in progress with a progress bar. Updates
@@ -47,8 +46,8 @@ class JobTracker:
 		except ZeroDivisionError:
 			left = -1
 		stats_list = [
+			(' Latest conversion', self.done[:min(width - 21, len(self.done))]),
 			('   Files remaining', '{} of {}'.format(lsa, self.total)),
-			(' Latest conversion', self.done),
 			('        Time spent', '{:.0f} s'.format(spent)),
 			('Est time remaining', '{:.0f} s'.format(left))
 		]
@@ -95,7 +94,6 @@ class JobTracker:
 		self.active.append(new)
 		self.started = new
 		self.show_state()
-		self.started = ''
 
 	def run(self, fun, args_list):
 		""" Creates multiprocessing pool to create a process to execute
@@ -249,6 +247,7 @@ class MusicConverter(JobTracker):
 			Fills self.matches with strings for audio files needing conversion.
 			Prints message to screen when completed.
 		"""
+		print('Scanning library . . .')
 		self.mkdirs()
 		self.files()
 		if self.total != 0:
