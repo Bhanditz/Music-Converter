@@ -74,8 +74,8 @@ converter.run()
 (2010) Silver Lining [FLAC]/04 - Silver Lining.flac 
 (2010) Silver Lining [FLAC]/02 - When Will We Learn.flac
 ██████████████████████████████████████████████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 73 % 
-   Files remaining │ 14 of 53   
- Latest conversion │ (2010) Your Love EP [FLAC]/02 - Tossed Up.flac 
-        Time spent │ 129 s  
+ Latest conversion │ (2010) Your Love EP [FLAC]/02 - Tossed Up.flac
+   Files remaining │ 14 of 53
+        Time spent │ 129 s
 Est time remaining │ 30 s
 ```
