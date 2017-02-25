@@ -61,3 +61,21 @@ portable_path = '/path/to/converted/library'
 converter = MusicConverter(archive_path, portable_path, 'OpusAudio')
 converter.run()
 ```
+
+## Sample output
+```
+═══════════════════ Currently Converting ═══════════════════
+(2010) Silver Lining [FLAC]/03 - Badlands.flac  
+(2010) Silver Lining [FLAC]/07 - Pushing Little Daisies.flac
+(2010) Silver Lining [FLAC]/08 - Detour.flac
+(2010) Silver Lining [FLAC]/09 - Sideways.flac  
+(2010) Silver Lining [FLAC]/05 - Drippin.flac   
+(2010) Silver Lining [FLAC]/06 - No More Messin About.flac  
+(2010) Silver Lining [FLAC]/04 - Silver Lining.flac 
+(2010) Silver Lining [FLAC]/02 - When Will We Learn.flac
+██████████████████████████████████████████████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 73 % 
+   Files remaining │ 14 of 53   
+ Latest conversion │ (2010) Your Love EP [FLAC]/02 - Tossed Up.flac 
+        Time spent │ 129 s  
+Est time remaining │ 30 s
+```
