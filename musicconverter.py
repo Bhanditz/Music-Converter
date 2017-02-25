@@ -2,6 +2,7 @@ import re
 import os
 import sys
 import glob
+import time
 import shutil
 import audiotools
 import multiprocessing
@@ -13,6 +14,9 @@ class JobTracker:
 		self.prog, self.active, = 0, []
 		self.total = total
 		self.procs = multiprocessing.cpu_count()
+		self.lines = self.procs + 5
+		self.done = 'Waiting for first file to complete . . .'
+		self.started = ''
 
 	def show_state(self):
 		""" Lists all jobs currently in progress with a progress bar. Updates
@@ -24,19 +28,44 @@ class JobTracker:
 		"""
 		done = self.prog/self.total
 		width = int(os.popen('stty size', 'r').read().split()[1])
-		paths = '\n'.join((
-			self.active + ['' for i in range(self.procs - len(self.active))]
-		)[::-1])
+		# Active list
+		lsa = len(self.active)
+		a = [p[:min(width, len(p))] for p in self.active[:min(self.procs, lsa)]]
+		pad = ['' for i in range(self.procs - lsa) if lsa < self.procs]
+		title = ' Currently Converting '
+		try:
+			border = '═'*int((len(max(a, key=len)) - len(title))/2)
+		except ValueError as e:
+			border = '═'
+		curr = border + title + border + '\n' + '\n'.join((a + pad)[::-1])
+		# Status display
+		spent = time.time() - self.start
+		try:
+			1 / (self.total - lsa)
+			# Add len(a)/2 to assume that we are halfway done with active jobs
+			left = ((self.total / (self.total - lsa + len(a)/2)) - 1)*spent
+		except ZeroDivisionError:
+			left = -1
+		stats_list = [
+			('   Files remaining', '{} of {}'.format(lsa, self.total)),
+			(' Latest conversion', self.done),
+			('        Time spent', '{:.0f} s'.format(spent)),
+			('Est time remaining', '{:.0f} s'.format(left))
+		]
+		stats = '\n'.join([' │ '.join(stat) for stat in stats_list])
+		# Progress bar
 		fill = int(done * width)
 		blank = width - fill
 		if fill > blank:
-			fill = fill - 6
+			fill -= 6
 		else:
-			blank = blank - 6
-		bar = '\r{}{} {} %'.format('█' * fill, '░' * blank, int(done * 100))
-		lines = min(len(self.active) - self.prog, self.procs)
-		sys.stdout.write('\033[F'*self.procs + (' ' * width + '\n') * self.procs)
-		sys.stdout.write('\033[F'*self.procs + paths + '\n' + bar)
+			blank -= 6
+		bar = '{}{} {} %'.format('█' * fill, '░' * blank, int(done * 100))
+		# Blank the output
+		blank = '\n'.join([' '*width for i in range(self.lines+1)])
+		sys.stdout.write('\033[F'*self.lines + blank)
+		# Redraw new output
+		sys.stdout.write('\033[F'*self.lines + curr +'\n'+ bar +'\n'+ stats)
 		sys.stdout.flush()
 
 	def job_done(self, rm):
@@ -51,6 +80,7 @@ class JobTracker:
 		"""
 		self.prog += 1
 		self.active.remove(rm)
+		self.done = rm
 		self.show_state()
 
 	def job_start(self, new):
@@ -63,7 +93,9 @@ class JobTracker:
 			Sends new string to stdout.
 		"""
 		self.active.append(new)
+		self.started = new
 		self.show_state()
+		self.started = ''
 
 	def run(self, fun, args_list):
 		""" Creates multiprocessing pool to create a process to execute
@@ -77,11 +109,11 @@ class JobTracker:
 			Sends new string to stdout.
 			Side effects of fun.
 		"""
-		print('\n' * (self.procs - 1))
+		print('\n' * (self.lines - 1))
+		self.start = time.time()
+		self.math_start = self.start
 		with multiprocessing.Pool() as pool:
 			for match in args_list:
-				if len(self.active) == self.procs:
-					result.wait()
 				self.job_start(match[2])
 				result = pool.apply_async(fun, match, callback=self.job_done)
 			result.get()
@@ -107,9 +139,10 @@ class MusicConverter(JobTracker):
 		'WaveAudio': (audiotools.WaveAudio, 'wav'),
 		'WavPackAudio': (audiotools.WavPackAudio, 'wv')
 	}
+	# These lists are not comprehensive, add more.
 	music_ext = [
-		'wav', 'aiff', 'wma', 'alac', 'spx', 'wv', 'ape',
-		'mp2', 'opus', 'shn', 'flac', 'mp3', 'au', 'm4a', 'ogg'
+		'wav', 'aiff', 'wma', 'alac', 'spx', 'wv', 'ogg' #, 'ape'
+		'mp2', 'opus', 'shn', 'flac', 'mp3', 'au', 'm4a'
 	]
 	image_ext = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tif']
 
@@ -118,7 +151,7 @@ class MusicConverter(JobTracker):
 		self.archive_path = archive_path
 		self.portable_path = portable_path
 		self.matches = []
-		self.portable = set(glob.glob(portable_path + '/**', recursive=True))
+		self.portable = set(glob.glob(glob.escape(portable_path) + '/**', recursive=True))
 		self.regex_music = self.regext(self.music_ext)
 		self.regex_image = self.regext(self.image_ext)
 		self.out_format, self.out_ext = self.formats[out_format]
@@ -136,7 +169,7 @@ class MusicConverter(JobTracker):
 				3. Any of the extensions in t.
 		"""
 		return re.compile(
-			'({})(.*\.)({})$'.format(self.archive_path, '|'.join(t))
+			'({})(.*\.)({})$'.format(re.escape(self.archive_path), '|'.join(t))
 		)
 
 	def convert(self, in_path, out_path, display, out_format=None):
@@ -171,7 +204,7 @@ class MusicConverter(JobTracker):
 		Side effects:
 			Creates a new directory for every directory not found in portable.
 		"""
-		for a_path in glob.iglob(self.archive_path + '/**/', recursive=True):
+		for a_path in glob.iglob(glob.escape(self.archive_path) + '/**/', recursive=True):
 			out_path = self.portable_path + a_path[len(self.archive_path):]
 			if out_path[:-1] not in self.portable:
 				try:
@@ -189,7 +222,7 @@ class MusicConverter(JobTracker):
 			Creates new image file for every image.
 			Fills self.matches with strings for audio files needing conversion.
 		"""
-		for a_path in glob.iglob(self.archive_path + '/**', recursive=True):
+		for a_path in glob.iglob(glob.escape(self.archive_path) + '/**', recursive=True):
 			music = self.regex_music.match(a_path)
 			if music:
 				out_path = self.portable_path + music.group(2) + self.out_ext
@@ -220,7 +253,7 @@ class MusicConverter(JobTracker):
 		self.files()
 		if self.total != 0:
 			super().run(self.convert, self.matches)
-		print(str(self.total) + ' files converted. Your library is up to date.')
+		print('\n\n' + str(self.total) + ' files converted. Library up to date.')
 
 
 
